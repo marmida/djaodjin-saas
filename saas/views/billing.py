@@ -51,7 +51,8 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import (DetailView, FormView, ListView,
     TemplateView, View)
 
-from saas.api.transactions import SmartTransactionListMixin
+from saas.api.transactions import (SmartTransactionListMixin,
+    TransactionQuerysetMixin)
 from saas.backends import PROCESSOR_BACKEND, ProcessorError
 from saas.utils import validate_redirect_url, datetime_or_now
 from saas.forms import (BankForm, CartPeriodsForm, CreditCardForm,
@@ -62,6 +63,7 @@ from saas.models import (Organization, CartItem, Coupon, Plan, Transaction,
 from saas.humanize import (as_money, describe_buy_periods, match_unlock,
     DESCRIBE_UNLOCK_NOW, DESCRIBE_UNLOCK_LATER)
 from saas.utils import product_url
+from saas.views.download import CSVDownloadView
 
 
 LOGGER = logging.getLogger(__name__)
@@ -371,18 +373,8 @@ class TransferListView(BankMixin, TemplateView):
         return context
 
 
-class AbstractTransactionDownloadView(OrganizationMixin, View):
-
-    def get_queryset(self):
-        """
-        Get the list of transactions for this organization.
-        """
-        org = self.get_organization()
-        return Transaction.objects.by_customer(org)
-
-
-class TransactionDownloadView(SmartTransactionListMixin,
-                              AbstractTransactionDownloadView):
+class TransactionDownloadView(TransactionQuerysetMixin,
+                              SmartTransactionListMixin, CSVDownloadView):
 
     headings = [
         'Created At',
@@ -391,26 +383,21 @@ class TransactionDownloadView(SmartTransactionListMixin,
         'Description'
     ]
 
-    def get(self, request, **kwargs):
-        org = self.get_organization()
-        transactions = self.get_queryset()
+    def get_headings(self, *args, **kwargs):
+        return self.headings
 
-        content = StringIO()
-        csv_writer = csv.writer(content)
-        csv_writer.writerow(self.headings)
-        for transaction in transactions:
-            csv_writer.writerow([
-                transaction.created_at,
-                '{:.2f}'.format((-1 if transaction.is_debit(org) else 1) *
-                    Decimal(transaction.dest_amount) / 100),
-                transaction.dest_unit.encode('utf-8'),
-                transaction.descr.encode('utf-8'),
-            ])
-        content.seek(0)
-        resp = HttpResponse(content, content_type='text/csv')
-        resp['Content-Disposition'] = datetime.now().strftime(
-            'attachment; filename="transactions-%Y%m%d.csv"')
-        return resp
+    def get_filename(self, *args, **kwargs):
+        return datetime.now().strftime('transactions-%Y%m%d.csv')
+    
+    def queryrow_to_columns(self, transaction):
+        org = self.get_organization()
+        return [
+            transaction.created_at,
+            '{:.2f}'.format((-1 if transaction.is_debit(org) else 1) *
+                Decimal(transaction.dest_amount) / 100),
+            transaction.dest_unit.encode('utf-8'),
+            transaction.descr.encode('utf-8'),
+        ]
 
 
 class AbstractTransferDownloadView(ProviderMixin, View):
