@@ -86,10 +86,10 @@ class CouponMetricsDownloadView(
     def get_headings(self):
         return self.headings
 
-    def get_filename(self, *_):
+    def get_filename(self, *args, **kwargs):
         return datetime.now().strftime('coupons-%Y%m%d.csv')
 
-    def get_queryset(self):
+    def get_queryset(self,  *args, **kwargs):
         '''
         Return CartItems related to the Coupon specified in the URL.
         '''
