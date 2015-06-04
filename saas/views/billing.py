@@ -354,25 +354,6 @@ class TransactionListView(OrganizationMixin, TemplateView):
         return context
 
 
-class TransferListView(BankMixin, TemplateView):
-    """
-    List of transfers from processor to an organization bank account.
-    """
-
-    template_name = 'saas/transfer_list.html'
-
-    def get_context_data(self, **kwargs):
-        self.organization = self.get_organization()
-        context = super(TransferListView, self).get_context_data(**kwargs)
-        balance_amount, balance_unit \
-            = Transaction.objects.get_organization_balance(
-            self.organization, Transaction.FUNDS)
-        context.update({'balance_amount': balance_amount,
-                        'balance_unit': balance_unit,
-                        'download_url': reverse('saas_transfers_download')})
-        return context
-
-
 class TransactionDownloadView(TransactionQuerysetMixin,
                               SmartTransactionListMixin, CSVDownloadView):
 
@@ -408,6 +389,25 @@ class AbstractTransferDownloadView(ProviderMixin, View):
         """
         org = self.get_organization()
         return Transaction.objects.by_organization(org, Transaction.FUNDS)
+
+
+class TransferListView(BankMixin, TemplateView):
+    """
+    List of transfers from processor to an organization bank account.
+    """
+
+    template_name = 'saas/transfer_list.html'
+
+    def get_context_data(self, **kwargs):
+        self.organization = self.get_organization()
+        context = super(TransferListView, self).get_context_data(**kwargs)
+        balance_amount, balance_unit \
+            = Transaction.objects.get_organization_balance(
+            self.organization, Transaction.FUNDS)
+        context.update({'balance_amount': balance_amount,
+                        'balance_unit': balance_unit,
+                        'download_url': reverse('saas_transfers_download')})
+        return context
 
 
 class TransferDownloadView(SmartTransactionListMixin,
