@@ -85,7 +85,7 @@ class SmartTransactionListMixin(SearchableListMixin, SortableListMixin):
 
 class TransactionQuerysetMixin(OrganizationMixin):
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self):
         """
         Get the list of transactions for this organization.
         """
@@ -100,7 +100,7 @@ class TransactionListAPIView(SmartTransactionListMixin,
     paginate_by = 25
 
 
-class TransferListBaseAPIView(ProviderMixin, ListAPIView):
+class TransferQuerysetMixin(ProviderMixin):
 
     def get_queryset(self):
         """
@@ -111,7 +111,8 @@ class TransferListBaseAPIView(ProviderMixin, ListAPIView):
             self.organization, Transaction.FUNDS)
 
 
-class TransferListAPIView(SmartTransactionListMixin, TransferListBaseAPIView):
+class TransferListAPIView(SmartTransactionListMixin, TransferQuerysetMixin,
+                          ListAPIView):
 
     serializer_class = TransactionSerializer
     paginate_by = 25

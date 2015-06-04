@@ -86,10 +86,10 @@ class CouponMetricsDownloadView(
     def get_headings(self):
         return self.headings
 
-    def get_filename(self, *args, **kwargs):
+    def get_filename(self):
         return datetime.now().strftime('coupons-%Y%m%d.csv')
 
-    def get_queryset(self,  *args, **kwargs):
+    def get_queryset(self):
         '''
         Return CartItems related to the Coupon specified in the URL.
         '''
@@ -207,20 +207,20 @@ class AbstractSubscriberPipelineDownloadView(ProviderMixin, CSVDownloadView):
     def get(self, request, *args, **kwargs):
         self.provider = self.get_organization()
         self.start_date = datetime_or_now(
-            parse_datetime(request.GET.get('start_date', None)))
+            parse_datetime(request.GET.get('start_date', None).strip('"')))
         self.end_date = datetime_or_now(
-            parse_datetime(request.GET.get('end_date', None)))
+            parse_datetime(request.GET.get('end_date', None).strip('"')))
 
         return super(AbstractSubscriberPipelineDownloadView, self).get(
             request, *args, **kwargs)
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self):
         return self.get_range_queryset(self.start_date, self.end_date)
 
     def get_headings(self):
         return ['Name', 'Email', 'Registration Date']
 
-    def get_filename(self, *_):
+    def get_filename(self):
         return 'subscribers-{}-{}.csv'.format(
             self.subscriber_type, datetime.now().strftime('%Y%m%d'))
 
@@ -235,7 +235,7 @@ class AbstractSubscriberPipelineDownloadView(ProviderMixin, CSVDownloadView):
 class SubscriberPipelineRegisteredDownloadView(
         RegisteredQuerysetMixin, AbstractSubscriberPipelineDownloadView):
 
-    subscriber_tyype = 'registered'
+    subscriber_type = 'registered'
 
 
 class SubscriberPipelineSubscribedDownloadView(
